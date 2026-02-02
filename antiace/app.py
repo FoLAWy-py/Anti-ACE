@@ -48,7 +48,7 @@ def run_background() -> int:
 
     # === State: ensure wegame path ===
     if not is_valid_wegame_path(cfg.wegame_path):
-        state = AppState.NEED_WEGAME_PATH
+        state["value"] = AppState.NEED_WEGAME_PATH
 
         auto = find_wegame_exe(search_registry=True)
         if auto:
@@ -63,7 +63,7 @@ def run_background() -> int:
             save_config(cfg)
 
     # === State: READY (tray + monitor) ===
-    state = AppState.READY
+    state["value"] = AppState.READY
 
     # Start wegame once if not running.
     started = False
@@ -97,9 +97,9 @@ def run_background() -> int:
             while not stop_event.is_set():
                 if not is_wegame_running():
                     # If wegame is gone, we exit. We do NOT restart endlessly.
-                    state["value"] = AppState.EXITING
                     stop_event.set()
                     gui_events.put(("ctl", "quit"))
+                    state["value"] = AppState.EXITING
                     break
 
                 optimizer.optimize_by_names(target_names)
