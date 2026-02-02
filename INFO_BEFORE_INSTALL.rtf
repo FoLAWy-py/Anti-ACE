@@ -1,0 +1,58 @@
+{\rtf1\ansi\ansicpg65001\deff0
+{\fonttbl{\f0 Segoe UI;}{\f1 Consolas;}}
+\viewkind4\uc1\pard\sa180\sl276\slmult1\f0\fs22
+
+\pard\sa240\qc\b\fs34 Anti-ACE — 安装前信息\b0\fs22\par
+\pard\sa120\qc 作者：FoLAWy  •  网站：www.witsqua.com\par
+
+\pard\sa240\b 软件功能\b0\par
+Anti-ACE 是一个 Windows 托盘工具，尝试通过对 ACE 相关守护进程施加“资源限制”，降低其对系统的持续负载（尽力而为）：\par
+\pard\li360\sa90\bullet\tab 效能模式 / 电源节流（best-effort）\par
+\pard\li360\sa90\bullet\tab 降低进程优先级\par
+\pard\li360\sa90\bullet\tab 限制 CPU 亲和性（仅使用最后一个逻辑 CPU）\par
+\pard\li0\sa180
+
+\pard\sa240\b 管理员权限要求\b0\par
+\b 本软件必须以管理员身份运行。\b0\par
+否则部分目标进程可能出现“拒绝访问（Access Denied）”，导致设置无法应用。\par
+
+\pard\sa240\b 许可摘要\b0\par
+本项目计划公开源代码，但许可为 \b仅限非商用\b0 ：禁止商用。\par
+完整条款请阅读 \b LICENSE.rtf\b0 。\par
+
+\pard\sa240\b 隐私说明\b0\par
+Anti-ACE 不需要账号，不会刻意上传个人数据。\par
+（系统可能仍会产生 Windows 标准日志，这不属于本工具可控范围。）\par
+
+\pard\sa240\b 注意事项\b0\par
+本工具主要影响进程调度/电源策略，\b不保证\b0 一定减少磁盘写入或硬件损耗，请以任务管理器/资源监视器等实际指标为准。\par
+
+\pard\sa240\qc\fs18 ----------------------------------------\par
+
+\pard\sa240\qc\b\fs34 Anti-ACE — Information Before Installation\b0\fs22\par
+\pard\sa120\qc Author: FoLAWy  •  www.witsqua.com\par
+
+\pard\sa240\b What this software does\b0\par
+Anti-ACE is a Windows tray utility that attempts to reduce the resource impact of certain ACE-related guard processes by applying:\par
+\pard\li360\sa90\bullet\tab Efficiency mode / power throttling (best-effort)\par
+\pard\li360\sa90\bullet\tab lower process priority\par
+\pard\li360\sa90\bullet\tab CPU affinity limitation (last logical CPU only)\par
+\pard\li0\sa180
+
+\pard\sa240\b Administrator requirement\b0\par
+\b This software must be run as Administrator.\b0\par
+Some protected or elevated processes may otherwise return “Access Denied”, and the optimization will not be applied.\par
+
+\pard\sa240\b License summary\b0\par
+This project is \b source-available\b0 and intended to be opened to the public, but it is \b non-commercial only\b0 .\par
+Commercial use is not allowed. See \b LICENSE.rtf\b0 for the full text.\par
+
+\pard\sa240\b Privacy\b0\par
+Anti-ACE does not require an account and does not intentionally upload personal data.\par
+(Your system may still create standard Windows logs; that is outside the scope of this app.)\par
+
+\pard\sa240\b Note\b0\par
+This tool can only influence process scheduling/power settings. It does not guarantee reduced disk writes or hardware wear. Please judge by real system metrics.\par
+
+\pard\sa360\qc\fs18 End\par
+}
