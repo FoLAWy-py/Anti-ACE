@@ -7,7 +7,7 @@ from .config import AppConfig, is_valid_wegame_path, load_config, save_config
 from .resources import resource_path
 from .tray import TrayController
 from .windows import _get_system_info, _set_processor_affinity_last_cpu, _set_windows_efficiency_mode
-from .wegame import find_wegame_exe
+from .wegame import find_wegame_exe, is_wegame_running
 
 
 def run_gui(
@@ -30,6 +30,10 @@ def run_gui(
     import threading
     import queue
     from pathlib import Path
+
+    import webbrowser
+
+    REPO_URL = "https://github.com/FoLAWy-py/Anti-ACE"
 
     target_processes = ["SGuard64.exe", "SGuardSvc64.exe"]
 
@@ -100,7 +104,7 @@ def run_gui(
     root = tk.Tk()
     root.title("antiACE")
     # Allow a compact height to avoid unused blank areas (still resizable)
-    root.geometry("840x260")
+    root.geometry("840x300")
     root.minsize(840, 240)
 
     style = ttk.Style(root)
@@ -133,11 +137,16 @@ def run_gui(
 
     lang_var = tk.StringVar(value="中文")
     status_var = tk.StringVar(value="")
+    wegame_status_var = tk.StringVar(value="")
+    guard_status_var = tk.StringVar(value="")
     progress_var = tk.IntVar(value=0)
     total_var = tk.IntVar(value=0)
     summary_var = tk.StringVar(value="")
     info_var = tk.StringVar(value="")
     wegame_var = tk.StringVar(value="")
+
+    wegame_state: str = "unknown"  # unknown|running|not_running|starting|start_failed
+    guard_optimized_once: bool = False
 
     cfg = load_config()
     wegame_path_state: str | None = cfg.wegame_path if is_valid_wegame_path(cfg.wegame_path) else None
@@ -185,6 +194,17 @@ def run_gui(
             "wegame_invalid": "请选择 wegame.exe",
             "wegame_auto_found": "已自动检测到 WeGame",
             "wegame_auto_not_found": "未检测到 WeGame，请手动选择",
+            "wegame_status": "WeGame 状态：{status}",
+            "wegame_running": "运行中",
+            "wegame_not_running": "未运行",
+            "wegame_starting": "正在启动…",
+            "wegame_start_failed": "启动失败",
+            "wegame_unknown": "未知",
+            "guard_status": "守护进程：{status}",
+            "guard_waiting": "等待检测…",
+            "guard_optimized": "已完成优化",
+            "menu_help": "帮助",
+            "menu_github": "打开 GitHub 仓库",
         },
         "en": {
             "window_title": "AntiACE Process Helper",
@@ -228,6 +248,17 @@ def run_gui(
             "wegame_invalid": "Please select wegame.exe",
             "wegame_auto_found": "WeGame detected",
             "wegame_auto_not_found": "WeGame not found, please pick manually",
+            "wegame_status": "WeGame: {status}",
+            "wegame_running": "Running",
+            "wegame_not_running": "Not running",
+            "wegame_starting": "Starting…",
+            "wegame_start_failed": "Start failed",
+            "wegame_unknown": "Unknown",
+            "guard_status": "Guard processes: {status}",
+            "guard_waiting": "Waiting…",
+            "guard_optimized": "Optimized",
+            "menu_help": "Help",
+            "menu_github": "Open GitHub repository",
         },
     }
 
@@ -295,6 +326,31 @@ def run_gui(
             pass
         choose_wegame_path()
 
+    def open_repo(_evt: object = None) -> None:
+        try:
+            webbrowser.open(REPO_URL)
+        except Exception:
+            pass
+
+    def refresh_status_lines() -> None:
+        nonlocal wegame_state, guard_optimized_once
+
+        if wegame_state == "running":
+            wegame_status_var.set(tr("wegame_status", status=tr("wegame_running")))
+        elif wegame_state == "not_running":
+            wegame_status_var.set(tr("wegame_status", status=tr("wegame_not_running")))
+        elif wegame_state == "starting":
+            wegame_status_var.set(tr("wegame_status", status=tr("wegame_starting")))
+        elif wegame_state == "start_failed":
+            wegame_status_var.set(tr("wegame_status", status=tr("wegame_start_failed")))
+        else:
+            wegame_status_var.set(tr("wegame_status", status=tr("wegame_unknown")))
+
+        if guard_optimized_once:
+            guard_status_var.set(tr("guard_status", status=tr("guard_optimized")))
+        else:
+            guard_status_var.set(tr("guard_status", status=tr("guard_waiting")))
+
     # === Top bar card ===
     top_card, top = _create_card(root, radius=16, pad=10)
     top_card.pack(fill="x", padx=10, pady=(10, 8))
@@ -307,6 +363,18 @@ def run_gui(
     settings_menu.add_command(label=tr("menu_choose_wegame"), command=choose_wegame_path)
     settings_menu.add_command(label=tr("menu_redetect_wegame"), command=redetect_wegame_path)
     menubar.add_cascade(label=tr("menu_settings"), menu=settings_menu)
+
+    settings_cascade_index = menubar.index("end")
+    settings_choose_index = 0
+    settings_redetect_index = 1
+
+    help_menu = tk.Menu(menubar, tearoff=0)
+    help_menu.add_command(label=tr("menu_github"), command=open_repo)
+    menubar.add_cascade(label=tr("menu_help"), menu=help_menu)
+
+    help_cascade_index = menubar.index("end")
+    help_github_index = 0
+
     root.configure(menu=menubar)
 
     title = ttk.Label(top, text="", font=("Segoe UI", 14, "bold"))
@@ -334,6 +402,12 @@ def run_gui(
 
     status_line = ttk.Label(top, textvariable=status_var)
     status_line.grid(row=5, column=0, columnspan=2, sticky="w", pady=(4, 0))
+
+    wegame_status_line = ttk.Label(top, textvariable=wegame_status_var)
+    wegame_status_line.grid(row=6, column=0, columnspan=2, sticky="w", pady=(2, 0))
+
+    guard_status_line = ttk.Label(top, textvariable=guard_status_var)
+    guard_status_line.grid(row=7, column=0, columnspan=2, sticky="w", pady=(2, 0))
 
     # === Results card ===
     results_card, results = _create_card(root, radius=16, pad=10)
@@ -452,10 +526,31 @@ def run_gui(
 
     def poll_events() -> None:
         nonlocal cpu_count_state, last_cpu_state
+        nonlocal wegame_state, guard_optimized_once
         try:
             while True:
                 ev = events.get_nowait()
                 kind = ev[0]
+                if kind == "bg_found":
+                    try:
+                        found = ev[1]
+                        total_var.set(len(found) if found else 0)
+                        # Keep a minimum height so the list is visible.
+                        set_table_rows(len(found) if found else 2)
+                        shrink_to_content()
+                    except Exception:
+                        pass
+                    continue
+                if kind == "wegame":
+                    wegame_state = str(ev[1]) if len(ev) > 1 else "unknown"
+                    refresh_status_lines()
+                    continue
+                if kind == "guard":
+                    action = str(ev[1]) if len(ev) > 1 else ""
+                    if action == "optimized":
+                        guard_optimized_once = True
+                        refresh_status_lines()
+                    continue
                 if kind == "ctl":
                     action = str(ev[1]) if len(ev) > 1 else ""
                     if action == "show":
@@ -676,11 +771,18 @@ def run_gui(
         quit_btn.configure(text=tr("btn_quit"))
         hint.configure(text=tr("hint"))
 
+        # Keep status lines consistent when switching language.
+        refresh_status_lines()
+
         # Menu translation
         try:
-            menubar.entryconfig(0, label=tr("menu_settings"))
-            settings_menu.entryconfig(0, label=tr("menu_choose_wegame"))
-            settings_menu.entryconfig(1, label=tr("menu_redetect_wegame"))
+            if settings_cascade_index is not None:
+                menubar.entryconfig(settings_cascade_index, label=tr("menu_settings"))
+            if help_cascade_index is not None:
+                menubar.entryconfig(help_cascade_index, label=tr("menu_help"))
+            settings_menu.entryconfig(settings_choose_index, label=tr("menu_choose_wegame"))
+            settings_menu.entryconfig(settings_redetect_index, label=tr("menu_redetect_wegame"))
+            help_menu.entryconfig(help_github_index, label=tr("menu_github"))
         except Exception:
             pass
 
@@ -713,6 +815,13 @@ def run_gui(
 
     lang_box.bind("<<ComboboxSelected>>", apply_language)
     apply_language()
+
+    # Initialize status lines (best-effort when running GUI-only mode).
+    try:
+        wegame_state = "running" if is_wegame_running() else "not_running"
+    except Exception:
+        wegame_state = "unknown"
+    refresh_status_lines()
 
     refresh_wegame_line()
 
